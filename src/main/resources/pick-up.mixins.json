@@ -3,7 +3,7 @@
 	"package": "net.gamemode3.pickup.mixin",
 	"compatibilityLevel": "JAVA_21",
 	"mixins": [
-		"ExampleMixin"
+		"PlayerInventoryMixin"
 	],
 	"injectors": {
 		"defaultRequire": 1

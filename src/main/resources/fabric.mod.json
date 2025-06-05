@@ -20,6 +20,9 @@
 		],
 		"fabric-datagen": [
 			"net.gamemode3.pickup.PickUpDataGenerator"
+		],
+		"client": [
+			"net.gamemode3.pickup.PickUpClient"
 		]
 	},
 	"mixins": [
