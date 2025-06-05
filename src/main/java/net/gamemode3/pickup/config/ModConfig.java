@@ -32,4 +32,8 @@ public class ModConfig {
     public static boolean getAlwaysPickUpIntoOffhandContainer() {
         return  true;
     }
+
+    public static boolean getPickFromShulkerBoxEnabled() { return true; }
+
+    public static boolean getPickFromBundleEnabled() { return true; }
 }

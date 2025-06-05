@@ -3,13 +3,13 @@
 	"id": "pick-up",
 	"version": "${version}",
 	"name": "pick up!",
-	"description": "This is an example description! Tell everyone what your mod is about!",
+	"description": "lets you pick up items right into containers to make inventory management less painful!",
 	"authors": [
-		"Me!"
+		"gamemode-3"
 	],
 	"contact": {
-		"homepage": "https://fabricmc.net/",
-		"sources": "https://github.com/FabricMC/fabric-example-mod"
+		"homepage": "https://github.com/gamemode-3/pick-up-1.21.5",
+		"sources": "https://github.com/gamemode-3/pick-up-1.21.5"
 	},
 	"license": "CC0-1.0",
 	"icon": "assets/pick-up/icon.png",

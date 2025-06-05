@@ -1,15 +1,11 @@
 package net.gamemode3.pickup.mixin;
 
 import net.gamemode3.pickup.config.ModConfig;
-import net.minecraft.component.DataComponentTypes;
-import net.minecraft.component.type.BundleContentsComponent;
-import net.minecraft.component.type.ContainerComponent;
+import net.gamemode3.pickup.inventory.ContainerHelper;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
-import net.minecraft.item.BundleItem;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
-import net.minecraft.item.Items;
 import net.minecraft.util.collection.DefaultedList;
 import net.minecraft.util.crash.CrashException;
 import net.minecraft.util.crash.CrashReport;
@@ -22,8 +18,6 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-import java.util.ArrayList;
-import java.util.List;
 
 @Mixin(PlayerInventory.class)
 public abstract class PlayerInventoryMixin {
@@ -90,7 +84,7 @@ public abstract class PlayerInventoryMixin {
             return;
         }
 
-        if (ModConfig.getStackIntoContainers() && tryStackIntoContainer(stack)) {
+        if (ModConfig.getStackIntoContainers() && this.tryStackIntoContainer(stack)) {
             cir.setReturnValue(stack.getCount());
             return;
         }
@@ -100,7 +94,7 @@ public abstract class PlayerInventoryMixin {
             return;
         }
 
-        if (ModConfig.getPickUpIntoEmptyContainerSlots() && tryFillEmptyContainerSlot(stack)) {
+        if (ModConfig.getPickUpIntoEmptyContainerSlots() && this.tryFillEmptyContainerSlot(stack)) {
             cir.setReturnValue(stack.getCount());
             return;
         }
@@ -111,94 +105,25 @@ public abstract class PlayerInventoryMixin {
     @Unique
     private boolean tryStackIntoOffHandContainer(ItemStack stack) {
         ItemStack offHandStack = this.player.getOffHandStack();
-        return tryStackIntoContainer(stack, offHandStack);
+        return ContainerHelper.tryStackIntoContainer(stack, offHandStack);
     }
 
     @Unique
     private boolean tryPickUpIntoOffHandContainer(ItemStack stack) {
         System.out.println("Trying to pick up into offhand container: " + stack);
         ItemStack offHandStack = this.player.getOffHandStack();
-        return tryFillEmptyContainerSlot(stack, offHandStack, false);
+        return ContainerHelper.tryFillEmptyContainerSlot(stack, offHandStack, false);
     }
 
     @Unique
     private boolean tryFillEmptyContainerSlot(ItemStack stack) {
         ItemStack offHandStack = this.player.getOffHandStack();
-        if (tryFillEmptyContainerSlot(stack, offHandStack)) return true;
+        if (ContainerHelper.tryFillEmptyContainerSlot(stack, offHandStack)) return true;
 
         for (ItemStack containerStack : this.main) {
-            if (tryFillEmptyContainerSlot(stack, containerStack)) return true;
+            if (ContainerHelper.tryFillEmptyContainerSlot(stack, containerStack)) return true;
         }
 
-        return false;
-    }
-
-    @Unique
-    private boolean tryFillEmptyContainerSlot(ItemStack stack, ItemStack containerStack) {
-        return tryFillEmptyContainerSlot(stack, containerStack, true);
-    }
-
-    @Unique
-    private boolean tryFillEmptyContainerSlot(ItemStack stack, ItemStack containerStack, boolean requireSpecificEmptySlotSetting) {
-        System.out.println("Trying to pick up into empty container: " + containerStack);
-        if (containerStack.isEmpty()) return false;
-        System.out.println("Slot is not empty");
-
-        if (containerStack.isOf(Items.BUNDLE) && ModConfig.getBundleEnabled()) {
-            if (requireSpecificEmptySlotSetting && !ModConfig.getBundleEmptySlotEnabled()) return false;
-            return tryAddIntoBundle(stack, containerStack);
-        }
-        if (containerStack.isOf(Items.SHULKER_BOX) && ModConfig.getShulkerBoxEnabled()) {
-            if (requireSpecificEmptySlotSetting && !ModConfig.getShulkerBoxEmptySlotEnabled()) return false;
-            System.out.println("Item is a shulker box");
-            return tryFillEmptyShulkerBoxSlot(stack, containerStack);
-        }
-        return false;
-    }
-
-    @Unique
-    private boolean tryAddIntoBundle(ItemStack stack, ItemStack bundleStack) {
-        System.out.println("Trying to pick up into bundle: " + bundleStack);
-        BundleContentsComponent bundleContentsComponent = bundleStack.getOrDefault(
-                DataComponentTypes.BUNDLE_CONTENTS,
-                BundleContentsComponent.DEFAULT
-        );
-        BundleContentsComponent.Builder builder = new BundleContentsComponent.Builder(bundleContentsComponent);
-        int addedItems = builder.add(stack);
-
-        bundleStack.set(DataComponentTypes.BUNDLE_CONTENTS, builder.build());
-        //                this.onContentChanged(player);
-        return addedItems > 0;
-    }
-
-    @Unique
-    private boolean tryFillEmptyShulkerBoxSlot(ItemStack stack, ItemStack shulkerBoxStack) {
-        // get the block entity of the shulker box
-        ContainerComponent containerComponent = shulkerBoxStack.get(
-                DataComponentTypes.CONTAINER
-        );
-        if (containerComponent == null) {
-            return false; // No block entity data, cannot stack into shulker box
-        }
-
-        List<ItemStack> stacks = new ArrayList<>(containerComponent.stream().toList());
-        if (stacks.size() < 27) {
-            // If the shulker box has less than 27 stacks, fill it up to 27
-            for (int i = stacks.size(); i < 27; i++) {
-                stacks.add(ItemStack.EMPTY);
-            }
-        }
-        for (int i = 0; i < stacks.size(); i++) { // for whatever reason i cannot use a for-each loop here, it just won't let me!!!!
-            ItemStack storedStack = stacks.get(i);
-            if (!storedStack.isEmpty()) continue;
-
-            stacks.set(i, stack.copy());
-            stack.setCount(0);
-
-            ContainerComponent newContainerComponent = ContainerComponent.fromStacks(stacks);
-            shulkerBoxStack.set(DataComponentTypes.CONTAINER, newContainerComponent);
-            return true;
-        }
         return false;
     }
 
@@ -234,86 +159,15 @@ public abstract class PlayerInventoryMixin {
         return false;
     }
 
-    /**
-     * Returns a pair of integers representing the slot the container is in
-     * and the slot within the container that has room for the stack.
-     * Returns Pair(-1, -1) if no such slot is found.
-     */
     @Unique
     private boolean tryStackIntoContainer(ItemStack stack) {
         ItemStack offHandStack = this.player.getOffHandStack();
-        if (tryStackIntoContainer(stack, offHandStack)) return true;
+        if (ContainerHelper.tryStackIntoContainer(stack, offHandStack)) return true;
 
         for (ItemStack containerStack : this.main) {
-            if (tryStackIntoContainer(stack, containerStack)) return true;
+            if (ContainerHelper.tryStackIntoContainer(stack, containerStack)) return true;
         }
 
-        return false;
-    }
-
-    @Unique
-    private boolean tryStackIntoContainer(ItemStack stack, ItemStack containerStack) {
-        if (containerStack.isEmpty()) return false;
-
-        if (containerStack.isOf(Items.BUNDLE) && ModConfig.getBundleEnabled()) {
-            return tryStackIntoBundle(stack, containerStack);
-        }
-        if (containerStack.isOf(Items.SHULKER_BOX) && ModConfig.getShulkerBoxEnabled()) {
-            return tryStackIntoShulkerBox(stack, containerStack);
-        }
-        return false;
-    }
-
-    @Unique
-    private boolean tryStackIntoBundle(ItemStack stack, ItemStack bundleStack) {
-        // check if the bundle contains a stack of the same item
-        boolean hasSameItem = false;
-        int selectedSlot = BundleItem.getSelectedStackIndex(bundleStack);
-        for (int j = 0; j < BundleItem.getNumberOfStacksShown(bundleStack); j++) {
-            BundleItem.setSelectedStackIndex(bundleStack, j);
-            ItemStack bundleContent = BundleItem.getSelectedStack(bundleStack);
-            if (bundleContent.isEmpty()) continue;
-            if (bundleContent.isOf(stack.getItem())) {
-                hasSameItem = true;
-                break;
-            }
-        }
-        // make sure we don't mess nothin' up innit
-        BundleItem.setSelectedStackIndex(bundleStack, selectedSlot);
-
-        if (hasSameItem) {
-            return tryAddIntoBundle(stack, bundleStack);
-        }
-        return false;
-    }
-
-    @Unique
-    private boolean tryStackIntoShulkerBox(ItemStack stack, ItemStack shulkerBoxStack) {
-        // get the block entity of the shulker box
-        ContainerComponent containerComponent = shulkerBoxStack.get(
-                DataComponentTypes.CONTAINER
-        );
-        if (containerComponent == null) {
-            return false; // No block entity data, cannot stack into shulker box
-        }
-
-        List<ItemStack> stacks = containerComponent.stream().toList();
-        for (ItemStack storedStack : stacks) { // for whatever reason i cannot use a for-each loop here, it just won't let me!!!!
-            if (storedStack.isEmpty()) continue;
-            if (!storedStack.isOf(stack.getItem())) continue;
-
-            int freeSpace = storedStack.getMaxCount() - storedStack.getCount();
-            if (!(freeSpace > 0)) continue;
-
-            int amountToAdd = Math.min(freeSpace, stack.getCount());
-            storedStack.increment(amountToAdd);
-            stack.decrement(amountToAdd);
-            shulkerBoxStack.set(DataComponentTypes.CONTAINER, containerComponent);
-
-            ContainerComponent newContainerComponent = ContainerComponent.fromStacks(stacks);
-            shulkerBoxStack.set(DataComponentTypes.CONTAINER, newContainerComponent);
-            return true;
-        }
         return false;
     }
 }
