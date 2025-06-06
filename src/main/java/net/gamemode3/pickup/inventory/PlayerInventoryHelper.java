@@ -1,14 +1,24 @@
 package net.gamemode3.pickup.inventory;
 
 import net.gamemode3.pickup.mixin.PlayerInventoryInvoker;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.item.ItemStack;
+import net.minecraft.network.packet.s2c.play.SetPlayerInventoryS2CPacket;
 import net.minecraft.registry.tag.ItemTags;
 import net.minecraft.util.Pair;
 
 import java.util.Optional;
 
 public class PlayerInventoryHelper {
+    public static int OFFHAND_SLOT = 45;
+
+    public static SetPlayerInventoryS2CPacket createOffhandSetPacket(PlayerEntity player) {
+        return new SetPlayerInventoryS2CPacket(
+                PlayerInventoryHelper.OFFHAND_SLOT, player.getOffHandStack()
+        );
+    }
+
     public static Optional<Pair<Integer, Pair<Integer, ItemStack>>> tryExtractStackFromContainer(PlayerInventory inventory, ItemStack stack, boolean enableShulkerBox, boolean enableBundle) {
         for (int i = 0; i < inventory.size(); i++) {
             ItemStack containerStack = inventory.getStack(i);

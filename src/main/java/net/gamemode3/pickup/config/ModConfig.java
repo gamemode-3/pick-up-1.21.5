@@ -25,11 +25,11 @@ public class ModConfig {
         return true;
     }
 
-    public static boolean getAlwaysStackIntoOffhandContainer() {
+    public static boolean getAlwaysStackIntoHandContainer() {
         return true;
     }
 
-    public static boolean getAlwaysPickUpIntoOffhandContainer() {
+    public static boolean getAlwaysPickUpIntoHandContainer() {
         return  true;
     }
 
