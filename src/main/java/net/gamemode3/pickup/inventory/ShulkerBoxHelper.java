@@ -10,7 +10,11 @@ import java.util.List;
 import java.util.Optional;
 
 public class ShulkerBoxHelper {
-    public static boolean tryFillEmptyShulkerBoxSlot(ItemStack stack, ItemStack shulkerBoxStack) {
+    public static boolean tryAddIntoShulkerBox(ItemStack stack, ItemStack shulkerBoxStack) {
+        if (ShulkerBoxHelper.tryStackIntoShulkerBox(stack, shulkerBoxStack)) {
+            return true;
+        }
+
         ContainerComponent containerComponent = shulkerBoxStack.get(
                 DataComponentTypes.CONTAINER
         );
@@ -92,19 +96,19 @@ public class ShulkerBoxHelper {
         return Optional.empty();
     }
 
-    public static boolean tryPutIntoShulkerBox(ItemStack stack, ItemStack shulkerBoxStack, int itemSlotInContainer) {
+    public static boolean tryPutIntoShulkerBox(ItemStack stack, ItemStack shulkerBoxStack, int slot) {
         ContainerComponent containerComponent = shulkerBoxStack.get(DataComponentTypes.CONTAINER);
         if (containerComponent == null) {
             return false;
         }
 
         List<ItemStack> stacks = new ArrayList<>(containerComponent.stream().toList());
-        if (stacks.size() <= itemSlotInContainer) {
-            for (int i = stacks.size(); i <= itemSlotInContainer; i++) {
+        if (stacks.size() <= slot) {
+            for (int i = stacks.size(); i <= slot; i++) {
                 stacks.add(ItemStack.EMPTY);
             }
         }
-        stacks.set(itemSlotInContainer, stack.copy());
+        stacks.set(slot, stack.copy());
         shulkerBoxStack.set(DataComponentTypes.CONTAINER, ContainerComponent.fromStacks(stacks));
         return true;
     }

@@ -32,8 +32,8 @@ public class ServerPlayNetworkHandlerMixin {
                     playerInventory.swapSlotWithHotbar(i);
                 }
             } else {
-                boolean enableShulkerBox = ModConfig.getPickFromShulkerBoxEnabled();
-                boolean enableBundle = ModConfig.getPickFromBundleEnabled();
+                boolean enableShulkerBox = ModConfig.getPickFromShulkerBox();
+                boolean enableBundle = ModConfig.getPickFromBundle();
                 Optional<Pair<Integer, Pair<Integer, ItemStack>>> extractedItemInfo = PlayerInventoryHelper.tryExtractStackFromContainer(playerInventory, stack, enableShulkerBox, enableBundle);
 
                 if (extractedItemInfo.isPresent()) {

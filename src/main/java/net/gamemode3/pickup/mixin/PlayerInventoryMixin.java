@@ -47,11 +47,14 @@ public abstract class PlayerInventoryMixin {
     @Shadow
     public abstract ItemStack getStack(int slot);
 
-    @Shadow public abstract int getSelectedSlot();
+    @Shadow
+    public abstract int getSelectedSlot();
 
-    @Shadow public abstract ItemStack getSelectedStack();
+    @Shadow
+    public abstract ItemStack getSelectedStack();
 
-    @Shadow public abstract SetPlayerInventoryS2CPacket createSlotSetPacket(int slot);
+    @Shadow
+    public abstract SetPlayerInventoryS2CPacket createSlotSetPacket(int slot);
 
     @Inject(method = "insertStack(ILnet/minecraft/item/ItemStack;)Z", at = @At("HEAD"), cancellable = true)
     private void insertStack(int slot, ItemStack stack, CallbackInfoReturnable<Boolean> cir) {
@@ -117,11 +120,8 @@ public abstract class PlayerInventoryMixin {
     }
 
     /**
-     *
-     * @param stack
-     * The stack to add to the inventory.
-     * @return
-     * A pair where the first element is the remaining stack count
+     * @param stack The stack to add to the inventory.
+     * @return A pair where the first element is the remaining stack count
      * and the second element is the slot index where the stack was added.
      * If the slot index is -1, it means the stack was added to the off-hand.
      */
@@ -129,14 +129,14 @@ public abstract class PlayerInventoryMixin {
     private Pair<Integer, Integer> addStackGetSlot(ItemStack stack) {
         System.out.println("Adding stack: " + stack);
         Optional<Integer> stackingInfo;
-        if (ModConfig.getAlwaysStackIntoHandContainer()) {
-            stackingInfo = tryStackIntoHandContainer(stack);
+        if (ModConfig.getAlwaysStackIntoEquippedContainer()) {
+            stackingInfo = tryStackIntoEquippedContainer(stack);
             if (stackingInfo.isPresent()) {
                 return new Pair<>(stack.getCount(), stackingInfo.get());
             }
         }
-        if (ModConfig.getAlwaysPickUpIntoHandContainer()) {
-            stackingInfo = tryPickUpIntoHandContainer(stack);
+        if (ModConfig.getAlwaysPickUpIntoEquippedContainer()) {
+            stackingInfo = tryPickUpIntoEquippedContainer(stack);
             if (stackingInfo.isPresent()) {
                 return new Pair<>(stack.getCount(), stackingInfo.get());
             }
@@ -159,8 +159,8 @@ public abstract class PlayerInventoryMixin {
             return new Pair<>(stack.getCount(), stackingInfo.get());
         }
 
-        if (ModConfig.getPickUpIntoEmptyContainerSlots()) {
-            stackingInfo = tryFillEmptyContainerSlot(stack);
+        if (ModConfig.getPickUpIntoContainers()) {
+            stackingInfo = tryPickUpIntoContainer(stack);
             if (stackingInfo.isPresent()) {
                 return new Pair<>(stack.getCount(), stackingInfo.get());
             }
@@ -169,7 +169,7 @@ public abstract class PlayerInventoryMixin {
         return new Pair<>(stack.getCount(), -2); // No slots available
     }
 
-    @Inject(method="offer", at = @At("HEAD"), cancellable = true)
+    @Inject(method = "offer", at = @At("HEAD"), cancellable = true)
     private void offer(ItemStack stack, boolean notifiesClient, CallbackInfo ci) {
         boolean stackChanged = true;
         while (!stack.isEmpty() && stackChanged) {
@@ -183,8 +183,7 @@ public abstract class PlayerInventoryMixin {
                 int slot = result.getRight();
                 if (slot >= 0) {
                     serverPlayerEntity.networkHandler.sendPacket(this.createSlotSetPacket(slot));
-                }
-                else if (slot == -1) {
+                } else if (slot == -1) {
                     serverPlayerEntity.networkHandler.sendPacket(PlayerInventoryHelper.createOffhandSetPacket(this.player));
                 } else {
                     // slot == -2, no slots available
@@ -202,47 +201,56 @@ public abstract class PlayerInventoryMixin {
     }
 
     @Unique
-    private Optional<Integer> tryStackIntoHandContainer(ItemStack stack) {
+    private Optional<Integer> tryStackIntoEquippedContainer(ItemStack stack) {
+        boolean enableShulkers = ModConfig.getAlwaysStackIntoEquippedShulkerBox();
+        boolean enableBundles = ModConfig.getAlwaysStackIntoEquippedBundle();
+
         ItemStack mainHandStack = this.getSelectedStack();
-        if (ContainerHelper.tryStackIntoContainer(stack, mainHandStack)) {
+        if (ContainerHelper.tryStackIntoContainer(stack, mainHandStack, enableShulkers, enableBundles)) {
             int mainHandSlot = this.getSelectedSlot();
             return Optional.of(mainHandSlot);
         }
         ItemStack offHandStack = this.player.getOffHandStack();
-        if (ContainerHelper.tryStackIntoContainer(stack, offHandStack)) {
+        if (ContainerHelper.tryStackIntoContainer(stack, offHandStack, enableShulkers, enableBundles)) {
             return Optional.of(-1);
         }
         return Optional.empty();
     }
 
     @Unique
-    private Optional<Integer> tryPickUpIntoHandContainer(ItemStack stack) {
+    private Optional<Integer> tryPickUpIntoEquippedContainer(ItemStack stack) {
+        boolean enableShulkers = ModConfig.getAlwaysPickUpIntoEquippedShulkerBox();
+        boolean enableBundles = ModConfig.getAlwaysPickUpIntoEquippedBundle();
+
         ItemStack mainHandStack = this.getSelectedStack();
-        if (ContainerHelper.tryFillEmptyContainerSlot(stack, mainHandStack)) {
+        if (ContainerHelper.tryPickUpIntoContainer(stack, mainHandStack, enableShulkers, enableBundles)) {
             int mainHandSlot = this.getSelectedSlot();
             return Optional.of(mainHandSlot);
         }
 
         ItemStack offHandStack = this.player.getOffHandStack();
-        if (ContainerHelper.tryFillEmptyContainerSlot(stack, offHandStack)) {
-            return Optional.of( -1);
+        if (ContainerHelper.tryPickUpIntoContainer(stack, offHandStack, enableShulkers, enableBundles)) {
+            return Optional.of(-1);
         }
         return Optional.empty();
     }
 
     @Unique
-    private Optional<Integer> tryFillEmptyContainerSlot(ItemStack stack) {
+    private Optional<Integer> tryPickUpIntoContainer(ItemStack stack) {
+        boolean enableShulkers = ModConfig.getPickUpIntoShulkerBox();
+        boolean enableBundles = ModConfig.getPickUpIntoBundle();
+
         ItemStack mainHandStack = this.getSelectedStack();
-        if (ContainerHelper.tryFillEmptyContainerSlot(stack, mainHandStack)) {
+        if (ContainerHelper.tryPickUpIntoContainer(stack, mainHandStack, enableShulkers, enableBundles)) {
             return Optional.of(this.getSelectedSlot());
         }
 
         ItemStack offHandStack = this.player.getOffHandStack();
-        if (ContainerHelper.tryFillEmptyContainerSlot(stack, offHandStack)) return Optional.of(-1);
+        if (ContainerHelper.tryPickUpIntoContainer(stack, offHandStack, enableShulkers, enableBundles)) return Optional.of(-1);
 
         for (int i = 0; i < this.main.size(); i++) {
             ItemStack containerStack = this.main.get(i);
-            if (ContainerHelper.tryFillEmptyContainerSlot(stack, containerStack)) return Optional.of(i);
+            if (ContainerHelper.tryPickUpIntoContainer(stack, containerStack, enableShulkers, enableBundles)) return Optional.of(i);
         }
 
         return Optional.empty();
@@ -299,19 +307,22 @@ public abstract class PlayerInventoryMixin {
 
     @Unique
     private Optional<Integer> tryStackIntoContainer(ItemStack stack) {
+        boolean enableShulkers = ModConfig.getStackIntoShulkerBox();
+        boolean enableBundles = ModConfig.getStackIntoBundle();
+
         ItemStack mainHandStack = this.getSelectedStack();
-        if (ContainerHelper.tryStackIntoContainer(stack, mainHandStack)) {
+        if (ContainerHelper.tryStackIntoContainer(stack, mainHandStack, enableShulkers, enableBundles)) {
             return Optional.of(this.getSelectedSlot());
         }
 
         ItemStack offHandStack = this.player.getOffHandStack();
-        if (ContainerHelper.tryStackIntoContainer(stack, offHandStack)) {
+        if (ContainerHelper.tryStackIntoContainer(stack, offHandStack, enableShulkers, enableBundles)) {
             return Optional.of(-1);
         }
 
         for (int i = 0; i < this.main.size(); i++) {
             ItemStack containerStack = this.main.get(i);
-            if (ContainerHelper.tryStackIntoContainer(stack, containerStack)) {
+            if (ContainerHelper.tryStackIntoContainer(stack, containerStack, enableShulkers, enableBundles)) {
                 return Optional.of(i);
             }
         }
