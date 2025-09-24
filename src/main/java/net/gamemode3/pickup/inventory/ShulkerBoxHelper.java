@@ -3,6 +3,7 @@ package net.gamemode3.pickup.inventory;
 import net.minecraft.component.DataComponentTypes;
 import net.minecraft.component.type.ContainerComponent;
 import net.minecraft.item.ItemStack;
+import net.minecraft.registry.tag.ItemTags;
 import net.minecraft.util.Pair;
 
 import java.util.ArrayList;
@@ -13,6 +14,10 @@ public class ShulkerBoxHelper {
     public static boolean tryAddIntoShulkerBox(ItemStack stack, ItemStack shulkerBoxStack) {
         if (ShulkerBoxHelper.tryStackIntoShulkerBox(stack, shulkerBoxStack)) {
             return true;
+        }
+
+        if (stack.isIn(ItemTags.SHULKER_BOXES)) {
+            return false;
         }
 
         ContainerComponent containerComponent = shulkerBoxStack.get(

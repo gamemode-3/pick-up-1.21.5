@@ -2,11 +2,13 @@ package net.gamemode3.pickup.mixin;
 
 import net.gamemode3.pickup.config.ModConfig;
 import net.gamemode3.pickup.inventory.ContainerHelper;
+import net.gamemode3.pickup.inventory.PlayerInventoryExtension;
 import net.gamemode3.pickup.inventory.PlayerInventoryHelper;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
+import net.minecraft.item.Items;
 import net.minecraft.network.packet.s2c.play.SetPlayerInventoryS2CPacket;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.util.Pair;
@@ -23,10 +25,12 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 
 @Mixin(PlayerInventory.class)
-public abstract class PlayerInventoryMixin {
+public abstract class PlayerInventoryMixin implements PlayerInventoryExtension {
     @Shadow
     @Final
     public PlayerEntity player;
@@ -58,16 +62,14 @@ public abstract class PlayerInventoryMixin {
 
     @Inject(method = "insertStack(ILnet/minecraft/item/ItemStack;)Z", at = @At("HEAD"), cancellable = true)
     private void insertStack(int slot, ItemStack stack, CallbackInfoReturnable<Boolean> cir) {
-        System.out.println(stack);
+        System.out.println("insertStack called with slot: " + slot + " stack: " + stack);
         if (stack.isEmpty()) {
             cir.setReturnValue(false);
             return;
         }
         try {
-            System.out.println("Inserting stack");
             int initialStackCount = stack.getCount();
             if (slot != -1) {
-                System.out.println("Inserting into specific slot: " + slot);
                 Thread.dumpStack();
                 ItemStack slotStack = this.getStack(slot);
                 if (slotStack.isEmpty()) {
@@ -90,12 +92,10 @@ public abstract class PlayerInventoryMixin {
 
             boolean stackChanged = true;
             while (!stack.isEmpty() && stackChanged) {
-                System.out.println("Try adding remaining stack: " + stack);
                 int previousCount = stack.getCount();
                 stack.setCount(this.addStack(stack));
                 stackChanged = stack.getCount() < previousCount;
             }
-            System.out.println("Cannot add more items, stack is now: " + stack);
 
             if (!stackChanged && this.player.isInCreativeMode()) {
                 stack.setCount(0);
@@ -115,6 +115,7 @@ public abstract class PlayerInventoryMixin {
 
     @Inject(method = "addStack(Lnet/minecraft/item/ItemStack;)I", at = @At("HEAD"), cancellable = true)
     private void addStack(ItemStack stack, CallbackInfoReturnable<Integer> cir) {
+        System.out.println("addStack called with stack: " + stack);
         Pair<Integer, Integer> result = addStackGetSlot(stack);
         cir.setReturnValue(result.getLeft());
     }
@@ -127,7 +128,6 @@ public abstract class PlayerInventoryMixin {
      */
     @Unique
     private Pair<Integer, Integer> addStackGetSlot(ItemStack stack) {
-        System.out.println("Adding stack: " + stack);
         Optional<Integer> stackingInfo;
         if (ModConfig.getAlwaysStackIntoEquippedContainer()) {
             stackingInfo = tryStackIntoEquippedContainer(stack);
@@ -173,9 +173,9 @@ public abstract class PlayerInventoryMixin {
     private void offer(ItemStack stack, boolean notifiesClient, CallbackInfo ci) {
         boolean stackChanged = true;
         while (!stack.isEmpty() && stackChanged) {
-            System.out.println("Try adding remaining stack: " + stack);
             int previousCount = stack.getCount();
             Pair<Integer, Integer> result = this.addStackGetSlot(stack);
+
 
             stack.setCount(result.getLeft());
             stackChanged = stack.getCount() < previousCount;
@@ -185,18 +185,19 @@ public abstract class PlayerInventoryMixin {
                     serverPlayerEntity.networkHandler.sendPacket(this.createSlotSetPacket(slot));
                 } else if (slot == -1) {
                     serverPlayerEntity.networkHandler.sendPacket(PlayerInventoryHelper.createOffhandSetPacket(this.player));
-                } else {
-                    // slot == -2, no slots available
-                    System.out.println("No slots available for stack: " + stack);
                 }
             }
         }
-        System.out.println("Cannot add more items, stack is now: " + stack);
 
         if (!stackChanged && this.player.isInCreativeMode()) {
             stack.setCount(0);
             return;
         }
+
+        if (!stack.isEmpty()) {
+            this.player.dropItem(stack, true);
+        }
+
         ci.cancel();
     }
 
@@ -295,7 +296,6 @@ public abstract class PlayerInventoryMixin {
 
     @Unique
     private Optional<Integer> tryFillEmptySlot(ItemStack stack) {
-        System.out.println("Trying to fill empty slot with: " + stack);
         int emptySlot = this.getEmptySlot();
         if (emptySlot != -1) {
             this.setStack(emptySlot, stack.copy());
@@ -328,5 +328,25 @@ public abstract class PlayerInventoryMixin {
         }
 
         return Optional.empty();
+    }
+
+    // ====== GHOST SLOTS ======
+
+    @Unique
+    private final List<Item> ghostSlots = DefaultedList.ofSize(PlayerInventory.MAIN_SIZE, Items.COAL);
+
+    public Item pick_up$getGhostItem(int slot) {
+        if (slot < 0 || slot >= ghostSlots.size()) {
+            return Items.AIR;
+        }
+        return ghostSlots.get(slot);
+    }
+
+    public boolean pick_up$setGhostItem(int slot, Item item) {
+        if (slot < 0 || slot >= ghostSlots.size()) {
+            return false;
+        }
+        ghostSlots.set(slot, item);
+        return true;
     }
 }
