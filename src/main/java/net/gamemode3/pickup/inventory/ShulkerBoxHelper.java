@@ -58,7 +58,7 @@ public class ShulkerBoxHelper {
         List<ItemStack> stacks = containerComponent.stream().toList();
         for (ItemStack storedStack : stacks) {
             if (storedStack.isEmpty()) continue;
-            if (!storedStack.isOf(stack.getItem())) continue;
+            if (!ItemStack.areItemsAndComponentsEqual(storedStack, stack)) continue;
 
             int freeSpace = storedStack.getMaxCount() - storedStack.getCount();
             if (!(freeSpace > 0)) continue;
@@ -88,7 +88,7 @@ public class ShulkerBoxHelper {
         for (int i = 0; i < stacks.size(); i++) {
             ItemStack storedStack = stacks.get(i);
             if (storedStack.isEmpty()) continue;
-            if (!storedStack.isOf(stack.getItem())) continue;
+            if (!ItemStack.areItemsAndComponentsEqual(storedStack, stack)) continue;
 
             ItemStack removedStack = storedStack.copy();
             stacks.set(i, ItemStack.EMPTY);

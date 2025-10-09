@@ -25,7 +25,6 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -281,9 +280,10 @@ public abstract class PlayerInventoryMixin implements PlayerInventoryExtension {
     private static boolean addStackToOther(ItemStack stack, ItemStack existingStack) {
         if (existingStack.isEmpty()) return false;
 
-        if (!existingStack.isOf(stack.getItem())) {
+        if (!ItemStack.areItemsAndComponentsEqual(existingStack, stack)) {
             return false;
         }
+        System.out.println("Merging stack " + stack + " into existing stack " + existingStack);
         int freeSpace = existingStack.getMaxCount() - existingStack.getCount();
         if (freeSpace <= 0) {
             return false;
