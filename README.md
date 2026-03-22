@@ -17,6 +17,8 @@ opening issues makes sense for:
 ### contribute code
 i'm pretty busy right now so if you can code or want to learn it by contributing, that would help me a lot!
 
+if you don't know how to get started, try [kaupenjoe's fabric modding tutorials](https://www.youtube.com/results?search_query=kaupenjoe+fabrig+modding)
+
 #### contributions should address an issue
 before opening a pull request (PR), make sure your contibution addresses an issue that is open and tagged by me. 
 otherwise i may not accept your PR because i may not want that change to be implemented.
