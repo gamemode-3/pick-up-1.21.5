@@ -44,6 +44,9 @@ or
 ```
 the `[text](link)` syntax will show up as [text](link).
 
+#### test before you commit
+test whether every interaction with items you can come up with works. genuinely take a few minutes to go over everything you can imagine. don't need to write automated tests but if you're that eager, great!
+
 #### AI policy
 tldr: do not contribute AI generated code. you may use single-line AI autocomplete. you should know what every line of your code does and why.
 
