@@ -29,6 +29,21 @@ by asking to be assigned you reserve the issue for yourself.
 before asking, please make sure you have the time to resolve the issue in a reasonable time frame (obviously depends on the issue, small fixes shouldn't take longer than a day tho). 
 if you take too long i might do it myself. i will, however, communicate that ahead of time.
 
+#### describe your PRs
+your PRs should have a clear description. usually that would be something like:
+```
+ fixed bug [#3](https://github.com/gamemode-3/pick-up-1.21.5/issues/3): <Title of Issue 3>
+```
+or
+```
+ implemented feature request [#3](https://github.com/gamemode-3/pick-up-1.21.5/issues/3): <Title of Issue 3>
+```
+or
+```
+ improved cross-compatibility with <other mod> [#3](https://github.com/gamemode-3/pick-up-1.21.5/issues/3): <Title of Issue 3>
+```
+the `[text](link)` syntax will show up as [text](link).
+
 #### AI policy
 tldr: do not contribute AI generated code. you may use single-line AI autocomplete. you should know what every line of your code does and why.
 
